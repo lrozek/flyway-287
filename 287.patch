@@ -1,0 +1,111 @@
+diff -r ef563e67bfb8 flyway-core/src/main/java/com/googlecode/flyway/core/util/scanner/JarFileLocationScanner.java
+--- a/flyway-core/src/main/java/com/googlecode/flyway/core/util/scanner/JarFileLocationScanner.java	Wed Sep 12 12:41:10 2012 +0200
++++ b/flyway-core/src/main/java/com/googlecode/flyway/core/util/scanner/JarFileLocationScanner.java	Fri Sep 14 15:31:57 2012 +0200
+@@ -15,7 +15,15 @@
+  */
+ package com.googlecode.flyway.core.util.scanner;
+ 
++import com.googlecode.flyway.core.util.logging.Log;
++import com.googlecode.flyway.core.util.logging.LogFactory;
++import org.springframework.util.ResourceUtils;
++
+ import java.io.IOException;
++import java.net.JarURLConnection;
++import java.net.URISyntaxException;
++import java.net.URL;
++import java.net.URLConnection;
+ import java.util.Enumeration;
+ import java.util.Set;
+ import java.util.TreeSet;
+@@ -40,7 +48,7 @@
+     }
+ 
+     public Set<String> findResourceNames(String location, String locationUrl) throws IOException {
+-        return findResourceNamesFromJarFile(extractJarFileName(locationUrl), location);
++        return findResourceNamesFromJarFile(locationUrl, location);
+     }
+ 
+     /**
+@@ -70,15 +78,75 @@
+     private Set<String> findResourceNamesFromJarFile(String jarFileName, String directory) throws IOException {
+         Set<String> resourceNames = new TreeSet<String>();
+ 
+-        JarFile jarFile = new JarFile(jarFileName);
+-        Enumeration<JarEntry> entries = jarFile.entries();
+-        while (entries.hasMoreElements()) {
+-            String entryName = entries.nextElement().getName();
+-            if (entryName.startsWith(directory)) {
+-                resourceNames.add(entryName);
++        URL jarUrl = new URL(protocol + ":" + jarFileName);
++        LOG.debug("resolving following location: " + jarUrl);
++        URLConnection con = jarUrl.openConnection();
++        JarFile jarFile;
++        String jarFileUrl;
++        String rootEntryPath;
++        boolean newJarFile = false;
++
++        if (con instanceof JarURLConnection) {
++            LOG.debug(jarUrl + " is a subclass of JarURLConnection");
++            // Should usually be the case for traditional JAR files.
++            JarURLConnection jarCon = (JarURLConnection) con;
++            jarFile = jarCon.getJarFile();
++            jarFileUrl = jarCon.getJarFileURL().toExternalForm();
++            JarEntry jarEntry = jarCon.getJarEntry();
++            rootEntryPath = (jarEntry != null ? jarEntry.getName() : "");
++        } else {
++            LOG.debug(jarUrl + " is not a subclass of JarURLConnection");
++            // No JarURLConnection -> need to resort to URL file parsing.
++            // We'll assume URLs of the format "jar:path!/entry", with the protocol
++            // being arbitrary as long as following the entry format.
++            // We'll also handle paths with and without leading "file:" prefix.
++            String urlFile = jarUrl.getFile();
++            int separatorIndex = urlFile.indexOf(JAR_URL_SEPARATOR);
++            if (separatorIndex != -1) {
++                jarFileUrl = urlFile.substring(0, separatorIndex);
++                rootEntryPath = urlFile.substring(separatorIndex + JAR_URL_SEPARATOR.length());
++                jarFile = getJarFile(jarFileUrl);
++            } else {
++                jarFile = new JarFile(urlFile);
++                jarFileUrl = urlFile;
++                rootEntryPath = "";
++            }
++            newJarFile = true;
++        }
++
++        try {
++            Enumeration<JarEntry> entries = jarFile.entries();
++            while (entries.hasMoreElements()) {
++                String entryName = entries.nextElement().getName();
++                if (entryName.startsWith(directory)) {
++                    LOG.debug("found following entry: " + entryName);
++                    resourceNames.add(entryName);
++                }
++            }
++            return resourceNames;
++        } finally {
++            if (newJarFile) {
++                jarFile.close();
+             }
+         }
++    }
+ 
+-        return resourceNames;
++    protected JarFile getJarFile(String jarFileUrl) throws IOException {
++        if (jarFileUrl.startsWith(FILE_URL_PREFIX)) {
++            try {
++                return new JarFile(ResourceUtils.toURI(jarFileUrl).getSchemeSpecificPart());
++            } catch (URISyntaxException ex) {
++                // Fallback for URLs that are not valid URIs (should hardly ever happen).
++                return new JarFile(jarFileUrl.substring(FILE_URL_PREFIX.length()));
++            }
++        } else {
++            return new JarFile(jarFileUrl);
++        }
+     }
++
++    public static final String JAR_URL_SEPARATOR = "!/";
++
++    public static final String FILE_URL_PREFIX = "file:";
++
++    private static final Log LOG = LogFactory.getLog(JarFileLocationScannercd.class);
+ }

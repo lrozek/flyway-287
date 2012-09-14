@@ -107,5 +107,5 @@ diff -r ef563e67bfb8 flyway-core/src/main/java/com/googlecode/flyway/core/util/s
 +
 +    public static final String FILE_URL_PREFIX = "file:";
 +
-+    private static final Log LOG = LogFactory.getLog(JarFileLocationScannercd.class);
++    private static final Log LOG = LogFactory.getLog(JarFileLocationScanner.class);
  }

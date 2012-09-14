@@ -133,7 +133,7 @@
                             <artifactId>${project.artifactId}</artifactId>
                         </executableDependency>
                         <arguments>
-                            <argument>-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y</argument>
+<!--                             <argument>-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y</argument> -->
                             <argument>-classpath</argument>
                             <classpath />
                             <argument>pl.lucas.flyway.Main</argument>

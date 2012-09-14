@@ -1,0 +1,6 @@
+CREATE TABLE
+    CONFIGURATION
+    (
+        CONFIGURATION_KEY nvarchar(100) PRIMARY KEY,
+        CONFIGURATION_VALUE nvarchar(100) NOT NULL
+    );

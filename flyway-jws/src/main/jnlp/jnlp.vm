@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Java Webstart JNLP Velocity Template for use with Webstart Maven Plugin -->
+<jnlp
+  spec="1.0+"
+  codebase="$$codebase"
+  context="$$context"
+  href="$$name">
+    <information>
+        <title>flyway-287</title>
+        <vendor>lucas</title>
+    </information>
+    <security>
+        <all-permissions/>
+    </security>
+    <resources>
+        <j2se version="1.6+" java-vm-args="-Xms256m -Xmx512m" />
+        $dependencies
+    </resources>
+    <application-desc main-class="$mainClass" />
+</jnlp>

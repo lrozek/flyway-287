@@ -1,2 +1,33 @@
 bug reproduction of following issue
 http://code.google.com/p/flyway/issues/detail?id=287
+
+
+how to reproduce:
+mvn clean install
+cd flyway-jws
+mvn cargo:run
+javaws http://localhost:8080/flyway-jws/webstart/flyway.jnlp
+
+
+
+after applying patch
+mvn clean install -P-MediumTests -pl flyway-core -am
+in the flyway pom <flyway.version>1.7</flyway.version> change it to <flyway.version>1.8-SNAPSHOT</flyway.version>
+mvn clean install
+javaws -uninstall
+cd flyway-jws
+javaws http://localhost:8080/flyway-jws/webstart/flyway.jnlp
+cd ../flyway-client
+mvn exec:exec
+cd ../flyway/jar-exec
+mvn exec:exec
+
+please look at the log file ${java.io.tmpdir}/flyway.log to see how for different types of classpath scanning are resolved
+- jws is agains jar:http:
+- flyway-client is agains file:
+- flyway-jar-exec is agains jar:
+
+patch is implemented based on org.springframework.core.io.support.PathMatchingResourcePatternResolver in spring-core-3.1.2.RELEASE.jar
+look at protected Set<Resource> doFindPathMatchingJarResources(Resource rootDirResource, String subPattern) throws IOException
+
+LocationScanner could take original URL, so I don't have to build it once again, but it requires refactoring of ClassPathScanner
